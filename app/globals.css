@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0b1120;
+  --surface: #0f172a;
+  --surface-2: #111c33;
+  --border: #1e293b;
+  --foreground: #e2e8f0;
+  --muted: #94a3b8;
+  --brand: #14b8a6;
+  --brand-2: #0ea5e9;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-2: var(--brand-2);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html,
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+body {
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  background-image:
+    radial-gradient(60rem 60rem at 110% -10%, rgba(20, 184, 166, 0.12), transparent 60%),
+    radial-gradient(50rem 50rem at -10% 10%, rgba(14, 165, 233, 0.1), transparent 55%);
+  background-attachment: fixed;
+}
+
+* {
+  border-color: var(--border);
+}
+
+.card {
+  background: color-mix(in oklab, var(--surface) 92%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  backdrop-filter: blur(6px);
+}
+
+.scroll-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: #243049;
+  border-radius: 999px;
+}
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.5); }
+  70% { box-shadow: 0 0 0 6px rgba(20, 184, 166, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(20, 184, 166, 0); }
+}
+.pulse {
+  animation: pulse-ring 1.6s infinite;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in {
+  animation: fade-in 0.25s ease-out;
+}
