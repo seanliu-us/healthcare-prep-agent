@@ -15,10 +15,10 @@ export function ApprovalBar({
   };
 
   return (
-    <div className="card flex flex-wrap items-center justify-between gap-3 border-amber-500/30 bg-amber-500/5 p-4 fade-in">
+    <div className="card flex flex-wrap items-center justify-between gap-3 border-[color-mix(in_oklch,var(--warn)_30%,white)] bg-[var(--warn-soft)] p-4 fade-in">
       <div>
-        <p className="text-sm font-semibold text-amber-200">Human approval required</p>
-        <p className="text-xs text-amber-300/70">
+        <p className="text-sm font-semibold text-[var(--warn-ink)]">Human approval required</p>
+        <p className="text-xs text-[var(--ink-3)]">
           Review the summary below, then approve to persist it to office memory.
         </p>
       </div>
@@ -27,7 +27,7 @@ export function ApprovalBar({
           type="button"
           disabled={!!submitting}
           onClick={() => decide("rejected")}
-          className="rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-300 transition hover:border-rose-500/50 hover:text-rose-300 disabled:opacity-50"
+          className="btn-ghost disabled:opacity-50"
         >
           {submitting === "rejected" ? "Rejecting…" : "Reject"}
         </button>
@@ -35,7 +35,7 @@ export function ApprovalBar({
           type="button"
           disabled={!!submitting}
           onClick={() => decide("approved")}
-          className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-400 disabled:opacity-50"
+          className="cta cta-accent disabled:opacity-50"
         >
           {submitting === "approved" ? "Approving…" : "Approve & save"}
         </button>

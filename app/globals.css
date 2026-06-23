@@ -1,52 +1,195 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------- */
+/* Klearforce-inspired design tokens                                 */
+/* ---------------------------------------------------------------- */
 :root {
-  --background: #0b1120;
-  --surface: #0f172a;
-  --surface-2: #111c33;
-  --border: #1e293b;
-  --foreground: #e2e8f0;
-  --muted: #94a3b8;
-  --brand: #14b8a6;
-  --brand-2: #0ea5e9;
+  --bg: oklch(100% 0 0);
+  --bg-2: oklch(96.5% 0.004 264);
+
+  --ink: oklch(18% 0.015 250);
+  --ink-2: oklch(38% 0.012 250);
+  --ink-3: oklch(56% 0.01 250);
+
+  --line: oklch(90% 0.008 250);
+  --line-2: oklch(94% 0.006 250);
+
+  --accent: #009dad;
+  --accent-ink: #006b78;
+  --accent-soft: oklch(97% 0.025 200);
+
+  --mint: oklch(78% 0.13 150);
+  --mint-ink: oklch(42% 0.12 150);
+  --mint-soft: oklch(96% 0.04 150);
+
+  --warn: oklch(74% 0.14 70);
+  --warn-ink: oklch(45% 0.13 70);
+  --warn-soft: oklch(97% 0.04 70);
+
+  --danger: #ef4444;
+  --danger-ink: #b91c1c;
+  --danger-soft: oklch(97% 0.03 25);
+
+  --rad: 14px;
+  --rad-sm: 8px;
+  --rad-lg: 18px;
+  --shadow-card: 0 14px 40px -22px rgba(0, 0, 0, 0.18);
+  --shadow-cta: 0 10px 24px -14px rgba(0, 109, 121, 0.55);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-surface: var(--surface);
-  --color-surface-2: var(--surface-2);
-  --color-border: var(--border);
-  --color-foreground: var(--foreground);
-  --color-muted: var(--muted);
-  --color-brand: var(--brand);
-  --color-brand-2: var(--brand-2);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--bg);
+  --color-surface: var(--bg);
+  --color-surface-2: var(--bg-2);
+  --color-border: var(--line);
+  --color-foreground: var(--ink);
+  --color-muted: var(--ink-3);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-instrument-serif), ui-serif, Georgia, serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, monospace;
 }
 
 html,
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--ink);
 }
 
 body {
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  background-image:
-    radial-gradient(60rem 60rem at 110% -10%, rgba(20, 184, 166, 0.12), transparent 60%),
-    radial-gradient(50rem 50rem at -10% 10%, rgba(14, 165, 233, 0.1), transparent 55%);
-  background-attachment: fixed;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
 }
 
 * {
-  border-color: var(--border);
+  border-color: var(--line);
+}
+
+/* ---------------------------------------------------------------- */
+/* Reusable element styles                                           */
+/* ---------------------------------------------------------------- */
+
+.serif {
+  font-family: var(--font-instrument-serif), ui-serif, Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
 }
 
 .card {
-  background: color-mix(in oklab, var(--surface) 92%, transparent);
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  backdrop-filter: blur(6px);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--rad);
+}
+
+.card-soft {
+  background: var(--bg-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--rad);
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.7rem 1.1rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+  background: var(--ink);
+  color: var(--bg);
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+.cta:hover {
+  background: #000;
+  box-shadow: var(--shadow-cta);
+}
+.cta-accent {
+  background: var(--accent);
+}
+.cta-accent:hover {
+  background: var(--accent-ink);
+}
+.cta:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink-2);
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.btn-ghost:hover {
+  border-color: var(--ink-3);
+  color: var(--ink);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  color: var(--ink-2);
+}
+
+.input {
+  width: 100%;
+  border-radius: var(--rad-sm);
+  border: 1px solid var(--line);
+  background: var(--bg);
+  padding: 0.65rem 0.8rem;
+  font-size: 0.9rem;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);
+}
+.input:disabled {
+  background: var(--bg-2);
+  color: var(--ink-3);
+}
+
+.field-label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.eyebrow {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.section-divider {
+  height: 1px;
+  background: var(--line-2);
+  width: 100%;
 }
 
 .scroll-thin::-webkit-scrollbar {
@@ -54,7 +197,7 @@ body {
   height: 8px;
 }
 .scroll-thin::-webkit-scrollbar-thumb {
-  background: #243049;
+  background: color-mix(in oklch, var(--ink-3) 30%, transparent);
   border-radius: 999px;
 }
 .scroll-thin::-webkit-scrollbar-track {
@@ -62,9 +205,9 @@ body {
 }
 
 @keyframes pulse-ring {
-  0% { box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.5); }
-  70% { box-shadow: 0 0 0 6px rgba(20, 184, 166, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(20, 184, 166, 0); }
+  0% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent) 45%, transparent); }
+  70% { box-shadow: 0 0 0 6px color-mix(in oklch, var(--accent) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent) 0%, transparent); }
 }
 .pulse {
   animation: pulse-ring 1.6s infinite;
