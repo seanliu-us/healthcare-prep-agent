@@ -25,7 +25,6 @@ export default function Home() {
   const [health, setHealth] = useState<Health | null>(null);
   const [tab, setTab] = useState<TabId>("summary");
   const [refreshKey, setRefreshKey] = useState(0);
-  const [composing, setComposing] = useState(false);
   const lastStatus = useRef(state.status);
 
   useEffect(() => {
@@ -62,10 +61,8 @@ export default function Home() {
   const running = state.status === "running" || state.status === "awaiting_approval";
   const visibleTab: TabId = tabs.find((t) => t.id === tab && !t.hidden) ? tab : (tabs.find((t) => !t.hidden)?.id as TabId) ?? "summary";
 
-  const showCompose = composing || state.source === "idle";
-
   return (
-    <div className="mx-auto flex w-full max-w-[1280px] flex-1 flex-col px-5 py-5 sm:px-7">
+    <div className="mx-auto flex w-full max-w-[1280px] flex-1 flex-col px-5 py-5 sm:px-7 lg:h-dvh lg:overflow-hidden">
       {/* ------------ Top app bar ------------ */}
       <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -78,41 +75,24 @@ export default function Home() {
         <StatusBar health={health} mode={state.mode} />
       </header>
 
-      <div className="grid flex-1 gap-5 lg:grid-cols-[300px_minmax(0,1fr)]">
+      <div className="grid flex-1 gap-5 lg:min-h-0 lg:grid-cols-[300px_minmax(0,1fr)]">
         {/* ------------ Left rail ------------ */}
-        <aside className="flex flex-col gap-4">
+        <aside className="flex flex-col gap-4 lg:min-h-0">
           <div className="card overflow-hidden">
             <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
               <h3 className="eyebrow text-[var(--ink-3)]">New prep</h3>
-              {state.source !== "idle" && (
-                <button
-                  type="button"
-                  onClick={() => setComposing((c) => !c)}
-                  className="text-xs text-[var(--accent-ink)] hover:underline"
-                >
-                  {showCompose ? "Hide" : "Open"}
-                </button>
-              )}
             </div>
-            {showCompose && (
-              <div className="p-4">
-                <RunForm
-                  disabled={running}
-                  onSubmit={(input) => {
-                    setComposing(false);
-                    start(input);
-                  }}
-                />
-              </div>
-            )}
+            <div className="p-4">
+              <RunForm disabled={running} onSubmit={(input) => start(input)} />
+            </div>
           </div>
 
-          <div className="card overflow-hidden">
+          <div className="card flex flex-col overflow-hidden lg:min-h-0 lg:flex-1">
             <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
               <h3 className="eyebrow text-[var(--ink-3)]">Recent preps</h3>
               <span className="text-[11px] text-[var(--ink-3)]">from office memory</span>
             </div>
-            <div className="scroll-thin max-h-[28rem] overflow-y-auto p-2">
+            <div className="scroll-thin max-h-[22rem] flex-1 overflow-y-auto p-2 lg:max-h-none lg:min-h-0">
               <RecentRuns
                 refreshKey={refreshKey}
                 selectedId={state.loadedSummaryId}
@@ -123,7 +103,7 @@ export default function Home() {
         </aside>
 
         {/* ------------ Workspace ------------ */}
-        <main className="flex min-w-0 flex-col gap-4">
+        <main className="flex min-w-0 flex-col gap-4 lg:min-h-0">
           <RunHeader
             input={state.input}
             runId={state.runId}
@@ -131,10 +111,7 @@ export default function Home() {
             elapsedMs={state.trace?.elapsedMs}
             source={state.source}
             createdAt={state.createdAt}
-            onReset={() => {
-              reset();
-              setComposing(true);
-            }}
+            onReset={() => reset()}
           />
 
           {state.approval && (
