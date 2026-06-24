@@ -220,3 +220,90 @@ body {
 .fade-in {
   animation: fade-in 0.25s ease-out;
 }
+
+/* ---------------------------------------------------------------- */
+/* Portal chrome (sidebar / top bar / data tables / Ask AI)          */
+/* ---------------------------------------------------------------- */
+
+.side-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  width: 40px;
+  border-radius: 10px;
+  color: var(--ink-3);
+  transition: background 0.15s, color 0.15s;
+}
+.side-icon:hover {
+  background: var(--bg-2);
+  color: var(--ink);
+}
+.side-icon[data-active="true"] {
+  background: color-mix(in oklch, var(--accent) 12%, white);
+  color: var(--accent-ink);
+}
+
+.section-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.kf-box {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--rad-sm);
+}
+
+.kf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+.kf-table th {
+  background: var(--bg-2);
+  text-align: left;
+  font-weight: 600;
+  color: var(--ink-2);
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+.kf-table td {
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  vertical-align: top;
+}
+.kf-table tbody tr:hover td {
+  background: color-mix(in oklch, var(--accent) 4%, white);
+}
+.kf-table .cell-strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ask-ai {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.62rem 1.05rem;
+  background: var(--ink);
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 500;
+  box-shadow: 0 14px 32px -12px rgba(0, 0, 0, 0.45);
+  transition: transform 0.15s, background 0.15s;
+}
+.ask-ai:hover {
+  background: #000;
+  transform: translateY(-1px);
+}

@@ -1,137 +1,177 @@
 "use client";
 
+import type { ReactNode } from "react";
 import type { OfficeSummary } from "@/lib/types";
 import { Badge, PriorityPill, SeverityPill } from "./ui";
 
 export function SummaryView({ summary }: { summary: OfficeSummary }) {
   const pa = summary.priorAuthorization;
   return (
-    <div className="flex flex-col gap-5">
-      <div className="rounded-[var(--rad)] border border-[color-mix(in_oklch,var(--accent)_25%,white)] bg-[color-mix(in_oklch,var(--accent)_5%,white)] p-5">
-        <div className="mb-2 flex items-center gap-2">
-          <Badge tone="accent">Office summary</Badge>
-          <Badge tone={summary.confidence >= 0.75 ? "mint" : "warn"}>
-            {(summary.confidence * 100).toFixed(0)}% confidence
-          </Badge>
+    <div className="flex flex-col gap-7">
+      {/* Status banner */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--rad-sm)] border border-[color-mix(in_oklch,var(--accent)_25%,white)] bg-[color-mix(in_oklch,var(--accent)_6%,white)] px-4 py-3">
+        <div>
+          <p className="eyebrow text-[var(--accent-ink)]">Office summary</p>
+          <p className="mt-0.5 text-base font-semibold text-[var(--ink)]">{summary.headline}</p>
         </div>
-        <h3 className="serif text-2xl text-[var(--ink)]">{summary.headline}</h3>
-        <p className="mt-2 text-sm leading-relaxed text-[var(--ink-2)]">{summary.overview}</p>
-        <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-          <Meta label="Patient" value={summary.patientName} />
-          <Meta label="Carrier" value={summary.insuranceCarrier} />
-          <Meta label="Procedure" value={summary.procedureCode} />
-          <Meta label="Date" value={summary.appointmentDate} />
-        </dl>
+        <Badge tone={summary.confidence >= 0.75 ? "mint" : "warn"}>
+          {(summary.confidence * 100).toFixed(0)}% confidence
+        </Badge>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Panel title="Prior authorization" tone={pa.likelyRequired ? "warn" : "mint"}>
-          <div className="mb-2 flex items-center gap-2">
-            <Badge tone={pa.likelyRequired ? "warn" : "mint"}>
-              {pa.likelyRequired ? "Likely required" : "Not typically required"}
-            </Badge>
-            <span className="text-xs text-[var(--ink-3)]">risk:</span>
-            <SeverityPill severity={pa.risk} />
-          </div>
-          <BulletList items={pa.requirements} />
-          {pa.notes && <p className="mt-2 text-xs text-[var(--ink-3)] italic">{pa.notes}</p>}
-        </Panel>
+      {/* 1. Overview */}
+      <Section n={1} title="Appointment Overview">
+        <div className="kf-box px-5 py-4">
+          <dl className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-3">
+            <KV label="Patient" value={summary.patientName} />
+            <KV label="Insurance Carrier" value={summary.insuranceCarrier} />
+            <KV label="Procedure" value={summary.procedureCode} mono />
+            <KV label="Appointment Date" value={summary.appointmentDate} />
+            {summary.estimatedPatientCost && (
+              <KV label="Estimated Cost" value={summary.estimatedPatientCost} />
+            )}
+          </dl>
+        </div>
+        {summary.overview && (
+          <p className="mt-3 text-sm leading-relaxed text-[var(--ink-2)]">{summary.overview}</p>
+        )}
+      </Section>
 
-        <Panel title="Coverage considerations">
-          <BulletList items={summary.coverageConsiderations} />
-          {summary.estimatedPatientCost && (
-            <p className="mt-2 text-sm text-[var(--ink-2)]">
-              <span className="text-[var(--ink-3)]">Est. cost: </span>
-              {summary.estimatedPatientCost}
-            </p>
-          )}
-        </Panel>
+      {/* 2. Prior authorization */}
+      <Section n={2} title="Prior Authorization">
+        <div className="kf-box mb-3 px-5 py-4">
+          <dl className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-3">
+            <KV label="Likely Required" value={pa.likelyRequired ? "Yes" : "No"} />
+            <KVNode label="Risk">
+              <SeverityPill severity={pa.risk} />
+            </KVNode>
+          </dl>
+          {pa.notes && <p className="mt-3 text-xs text-[var(--ink-3)] italic">{pa.notes}</p>}
+        </div>
+        {pa.requirements.length > 0 && <Bullets items={pa.requirements} />}
+      </Section>
 
-        <Panel title="Patient prep">
-          <BulletList items={summary.patientPrepInstructions} />
-        </Panel>
+      {/* 3. Coverage */}
+      <Section n={3} title="Coverage & Cost Considerations">
+        <Bullets items={summary.coverageConsiderations} />
+      </Section>
 
-        <Panel title="Questions for patient">
-          <BulletList items={summary.questionsForPatient} />
-        </Panel>
-      </div>
+      {/* 4. Recommended actions */}
+      <Section n={4} title="Recommended Actions">
+        <div className="overflow-x-auto">
+          <table className="kf-table">
+            <thead>
+              <tr>
+                <th>Priority</th>
+                <th>Action</th>
+                <th>Owner</th>
+                <th>Due</th>
+              </tr>
+            </thead>
+            <tbody>
+              {summary.recommendedActions.map((a, i) => (
+                <tr key={i}>
+                  <td>
+                    <PriorityPill priority={a.priority} />
+                  </td>
+                  <td>
+                    <span className="cell-strong">{a.action}</span>
+                    {a.rationale && (
+                      <span className="mt-0.5 block text-[var(--ink-3)]">{a.rationale}</span>
+                    )}
+                  </td>
+                  <td className="whitespace-nowrap">{a.owner}</td>
+                  <td className="whitespace-nowrap">{a.dueBy ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Section>
 
+      {/* 5. Risks */}
       {summary.risksAndGaps.length > 0 && (
-        <Panel title="Risks & gaps">
-          <ul className="flex flex-col gap-2">
-            {summary.risksAndGaps.map((r, i) => (
-              <li
-                key={i}
-                className="rounded-[var(--rad-sm)] border border-[var(--line)] bg-[var(--bg)] p-3"
-              >
-                <div className="mb-1 flex items-center gap-2">
-                  <SeverityPill severity={r.severity} />
-                  <span className="text-sm font-medium text-[var(--ink)]">{r.title}</span>
-                </div>
-                <p className="text-sm text-[var(--ink-2)]">{r.detail}</p>
-              </li>
-            ))}
-          </ul>
-        </Panel>
+        <Section n={5} title="Risks & Gaps">
+          <div className="overflow-x-auto">
+            <table className="kf-table">
+              <thead>
+                <tr>
+                  <th>Severity</th>
+                  <th>Risk</th>
+                  <th>Detail</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summary.risksAndGaps.map((r, i) => (
+                  <tr key={i}>
+                    <td>
+                      <SeverityPill severity={r.severity} />
+                    </td>
+                    <td className="cell-strong whitespace-nowrap">{r.title}</td>
+                    <td>{r.detail}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Section>
       )}
 
-      {summary.recommendedActions.length > 0 && (
-        <Panel title="Recommended actions">
-          <ul className="flex flex-col gap-2">
-            {summary.recommendedActions.map((a, i) => (
-              <li
-                key={i}
-                className="rounded-[var(--rad-sm)] border border-[var(--line)] bg-[var(--bg)] p-3"
-              >
-                <div className="mb-1.5 flex flex-wrap items-center gap-2">
-                  <PriorityPill priority={a.priority} />
-                  <Badge tone="accent">{a.owner}</Badge>
-                  {a.dueBy && <span className="text-xs text-[var(--ink-3)]">due {a.dueBy}</span>}
-                </div>
-                <p className="text-sm font-medium text-[var(--ink)]">{a.action}</p>
-                <p className="mt-0.5 text-sm text-[var(--ink-2)]">{a.rationale}</p>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      )}
+      {/* 6. Prep & questions */}
+      <Section n={6} title="Patient Prep & Questions">
+        <div className="grid gap-5 md:grid-cols-2">
+          <div>
+            <p className="mb-2 text-[11px] font-semibold tracking-wide text-[var(--ink-3)] uppercase">
+              Preparation instructions
+            </p>
+            <Bullets items={summary.patientPrepInstructions} />
+          </div>
+          <div>
+            <p className="mb-2 text-[11px] font-semibold tracking-wide text-[var(--ink-3)] uppercase">
+              Questions for patient
+            </p>
+            <Bullets items={summary.questionsForPatient} />
+          </div>
+        </div>
+      </Section>
     </div>
   );
 }
 
-function Meta({ label, value }: { label: string; value: string }) {
+/* ---------------------------------------------------------------- */
+
+function Section({ n, title, children }: { n: number; title: string; children: ReactNode }) {
+  return (
+    <section className="fade-in">
+      <h3 className="section-title mb-3">
+        {n}. {title}:
+      </h3>
+      {children}
+    </section>
+  );
+}
+
+function KV({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
   return (
     <div>
-      <dt className="field-label">{label}</dt>
-      <dd className="mt-0.5 text-sm text-[var(--ink)]">{value}</dd>
+      <dt className="text-[11px] tracking-wide text-[var(--ink-3)] uppercase">{label}</dt>
+      <dd className={`mt-0.5 text-sm font-medium text-[var(--ink)] ${mono ? "font-mono" : ""}`}>
+        {value}
+      </dd>
     </div>
   );
 }
 
-function Panel({
-  title,
-  tone = "neutral",
-  children,
-}: {
-  title: string;
-  tone?: "neutral" | "warn" | "mint";
-  children: React.ReactNode;
-}) {
-  const border =
-    tone === "warn"
-      ? "border-[color-mix(in_oklch,var(--warn)_25%,white)]"
-      : tone === "mint"
-        ? "border-[color-mix(in_oklch,var(--mint)_25%,white)]"
-        : "border-[var(--line)]";
+function KVNode({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className={`rounded-[var(--rad)] border ${border} bg-[var(--bg)] p-4`}>
-      <h4 className="eyebrow mb-3 text-[var(--ink-3)]">{title}</h4>
-      {children}
+    <div>
+      <dt className="text-[11px] tracking-wide text-[var(--ink-3)] uppercase">{label}</dt>
+      <dd className="mt-1">{children}</dd>
     </div>
   );
 }
 
-function BulletList({ items }: { items: string[] }) {
+function Bullets({ items }: { items: string[] }) {
   if (!items.length) return <p className="text-sm text-[var(--ink-3)] italic">None noted.</p>;
   return (
     <ul className="flex flex-col gap-1.5">

@@ -10,6 +10,9 @@ import { ApprovalBar } from "./components/ApprovalBar";
 import { RunHeader } from "./components/RunHeader";
 import { RecentRuns } from "./components/RecentRuns";
 import { Tabs, type TabDef } from "./components/Tabs";
+import { Sidebar } from "./components/Sidebar";
+import { TopBar } from "./components/TopBar";
+import { AskAiButton } from "./components/AskAiButton";
 import { Badge } from "./components/ui";
 
 interface Health {
@@ -34,7 +37,6 @@ export default function Home() {
       .catch(() => setHealth(null));
   }, []);
 
-  // Auto-switch to Activity while running, to Summary when done.
   useEffect(() => {
     if (state.status === "running" && lastStatus.current !== "running") setTab("activity");
     if (state.status === "done" && lastStatus.current !== "done") setTab("summary");
@@ -61,146 +63,150 @@ export default function Home() {
   const running = state.status === "running" || state.status === "awaiting_approval";
   const visibleTab: TabId = tabs.find((t) => t.id === tab && !t.hidden) ? tab : (tabs.find((t) => !t.hidden)?.id as TabId) ?? "summary";
 
+  const scrollTo = (id: string) => {
+    const el = document.getElementById(id);
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (id === "new-prep") {
+      const input = el?.querySelector("input");
+      (input as HTMLInputElement | null)?.focus();
+    }
+  };
+
   return (
-    <div className="mx-auto flex w-full max-w-[1280px] flex-1 flex-col px-5 py-5 sm:px-7 lg:h-dvh lg:overflow-hidden">
-      {/* ------------ Top app bar ------------ */}
-      <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Mark />
-          <div className="leading-tight">
-            <p className="serif text-lg text-[var(--ink)]">PrepPilot</p>
-            <p className="text-xs text-[var(--ink-3)]">Appointment preparation workspace</p>
+    <div className="flex h-dvh w-full overflow-hidden bg-[var(--bg)]">
+      <Sidebar onNew={() => scrollTo("new-prep")} onHistory={() => scrollTo("recent-preps")} />
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TopBar
+          statusSlot={<StatusBar health={health} mode={state.mode} />}
+          onLogout={() => reset()}
+        />
+
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <div className="mx-auto flex h-full max-w-[1320px] flex-col px-4 py-4 sm:px-6 sm:py-5">
+            <div className="grid flex-1 gap-5 lg:min-h-0 lg:grid-cols-[300px_minmax(0,1fr)]">
+              {/* ---------- Left rail ---------- */}
+              <aside className="flex flex-col gap-4 lg:min-h-0">
+                <div id="new-prep" className="card overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
+                    <h3 className="eyebrow text-[var(--ink-3)]">New prep</h3>
+                  </div>
+                  <div className="p-4">
+                    <RunForm disabled={running} onSubmit={(input) => start(input)} />
+                  </div>
+                </div>
+
+                <div
+                  id="recent-preps"
+                  className="card flex flex-col overflow-hidden lg:min-h-0 lg:flex-1"
+                >
+                  <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
+                    <h3 className="eyebrow text-[var(--ink-3)]">Recent preps</h3>
+                    <span className="text-[11px] text-[var(--ink-3)]">office memory</span>
+                  </div>
+                  <div className="scroll-thin max-h-[22rem] flex-1 overflow-y-auto p-2 lg:max-h-none lg:min-h-0">
+                    <RecentRuns
+                      refreshKey={refreshKey}
+                      selectedId={state.loadedSummaryId}
+                      onSelect={(id) => loadHistory(id)}
+                      onDeleted={(id) => {
+                        if (state.loadedSummaryId === id) reset();
+                      }}
+                    />
+                  </div>
+                </div>
+              </aside>
+
+              {/* ---------- Workspace ---------- */}
+              <main className="flex min-w-0 flex-col gap-4 lg:min-h-0">
+                <RunHeader
+                  input={state.input}
+                  runId={state.runId}
+                  status={state.status}
+                  elapsedMs={state.trace?.elapsedMs}
+                  source={state.source}
+                  createdAt={state.createdAt}
+                  onReset={() => reset()}
+                />
+
+                {state.approval && (
+                  <ApprovalBar onDecision={(d) => decide(state.approval!.approvalId, d)} />
+                )}
+
+                {state.source === "idle" ? (
+                  <EmptyWorkspace />
+                ) : (
+                  <div className="card flex min-h-0 flex-1 flex-col">
+                    <div className="px-4 pt-3">
+                      <Tabs
+                        tabs={tabs}
+                        active={visibleTab}
+                        onChange={(id) => setTab(id as TabId)}
+                        right={
+                          state.source === "live" && state.persisted ? (
+                            <Badge tone="mint">Saved</Badge>
+                          ) : null
+                        }
+                      />
+                    </div>
+                    <div className="scroll-thin min-h-0 flex-1 overflow-y-auto p-5">
+                      {visibleTab === "summary" && state.summary && (
+                        <SummaryView summary={state.summary} />
+                      )}
+                      {visibleTab === "activity" && (
+                        <Timeline items={state.timeline} running={running} />
+                      )}
+                      {visibleTab === "findings" && <Findings findings={state.findings} />}
+                      {visibleTab === "trace" && state.trace && (
+                        <TraceView
+                          trace={state.trace}
+                          persisted={state.persisted}
+                          mode={state.mode}
+                          model={state.model}
+                        />
+                      )}
+                      {visibleTab === "summary" && !state.summary && (
+                        <EmptyTab message="The summary will appear here when the run is complete." />
+                      )}
+                    </div>
+                  </div>
+                )}
+              </main>
+            </div>
           </div>
         </div>
-        <StatusBar health={health} mode={state.mode} />
-      </header>
-
-      <div className="grid flex-1 gap-5 lg:min-h-0 lg:grid-cols-[300px_minmax(0,1fr)]">
-        {/* ------------ Left rail ------------ */}
-        <aside className="flex flex-col gap-4 lg:min-h-0">
-          <div className="card overflow-hidden">
-            <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
-              <h3 className="eyebrow text-[var(--ink-3)]">New prep</h3>
-            </div>
-            <div className="p-4">
-              <RunForm disabled={running} onSubmit={(input) => start(input)} />
-            </div>
-          </div>
-
-          <div className="card flex flex-col overflow-hidden lg:min-h-0 lg:flex-1">
-            <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
-              <h3 className="eyebrow text-[var(--ink-3)]">Recent preps</h3>
-              <span className="text-[11px] text-[var(--ink-3)]">from office memory</span>
-            </div>
-            <div className="scroll-thin max-h-[22rem] flex-1 overflow-y-auto p-2 lg:max-h-none lg:min-h-0">
-              <RecentRuns
-                refreshKey={refreshKey}
-                selectedId={state.loadedSummaryId}
-                onSelect={(id) => loadHistory(id)}
-                onDeleted={(id) => {
-                  if (state.loadedSummaryId === id) reset();
-                }}
-              />
-            </div>
-          </div>
-        </aside>
-
-        {/* ------------ Workspace ------------ */}
-        <main className="flex min-w-0 flex-col gap-4 lg:min-h-0">
-          <RunHeader
-            input={state.input}
-            runId={state.runId}
-            status={state.status}
-            elapsedMs={state.trace?.elapsedMs}
-            source={state.source}
-            createdAt={state.createdAt}
-            onReset={() => reset()}
-          />
-
-          {state.approval && (
-            <ApprovalBar onDecision={(d) => decide(state.approval!.approvalId, d)} />
-          )}
-
-          {state.source === "idle" ? (
-            <EmptyWorkspace />
-          ) : (
-            <div className="card flex min-h-0 flex-1 flex-col">
-              <div className="px-4 pt-3">
-                <Tabs
-                  tabs={tabs}
-                  active={visibleTab}
-                  onChange={(id) => setTab(id as TabId)}
-                  right={
-                    state.source === "live" && state.persisted ? (
-                      <Badge tone="mint">Saved</Badge>
-                    ) : null
-                  }
-                />
-              </div>
-              <div className="scroll-thin min-h-0 flex-1 overflow-y-auto p-5">
-                {visibleTab === "summary" && state.summary && (
-                  <SummaryView summary={state.summary} />
-                )}
-                {visibleTab === "activity" && (
-                  <Timeline items={state.timeline} running={running} />
-                )}
-                {visibleTab === "findings" && <Findings findings={state.findings} />}
-                {visibleTab === "trace" && state.trace && (
-                  <TraceView
-                    trace={state.trace}
-                    persisted={state.persisted}
-                    mode={state.mode}
-                    model={state.model}
-                  />
-                )}
-                {visibleTab === "summary" && !state.summary && (
-                  <EmptyTab message="The summary will appear here when the run is complete." />
-                )}
-              </div>
-            </div>
-          )}
-        </main>
       </div>
 
-      <footer className="mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--line-2)] pt-4 text-xs text-[var(--ink-3)]">
-        <span>PrepPilot · proof-of-concept · synthetic data only</span>
-        <span>Next.js · Anthropic · MCP · SQLite</span>
-      </footer>
+      <AskAiButton onClick={() => scrollTo("new-prep")} />
     </div>
   );
 }
 
 /* ---------------------------------------------------------------- */
 
-function StatusBar({
-  health,
-  mode,
-}: {
-  health: Health | null;
-  mode?: "llm" | "heuristic";
-}) {
+function StatusBar({ health, mode }: { health: Health | null; mode?: "llm" | "heuristic" }) {
   const effectiveMode = mode ?? health?.agentMode;
   const isLive = effectiveMode === "llm";
   const searchLive = health?.searchProvider === "tavily";
   return (
-    <div className="hidden flex-wrap items-center gap-3 text-xs text-[var(--ink-3)] sm:flex">
+    <div className="mr-1 hidden items-center gap-3 text-xs text-[var(--ink-3)] lg:flex">
       <Indicator
         on={isLive}
         onLabel={`LLM · ${health?.model ?? "Claude"}`}
         offLabel="Heuristic mode"
-        title={isLive ? "Anthropic API key detected." : "No API key — running deterministic heuristic planner."}
+        title={isLive ? "Anthropic API key detected." : "No API key — deterministic heuristic planner."}
       />
       <span className="h-3 w-px bg-[var(--line)]" />
       <Indicator
         on={searchLive}
         onLabel="Search · Tavily"
-        offLabel="Search · Knowledge base"
+        offLabel="Search · KB"
         title={searchLive ? "Live web search via Tavily." : "Curated payer knowledge base (offline)."}
       />
       <span className="h-3 w-px bg-[var(--line)]" />
       <span className="inline-flex items-center gap-1.5">
         <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--mint)" }} />
-        MCP connected
+        MCP
       </span>
     </div>
   );
@@ -234,8 +240,8 @@ function EmptyWorkspace() {
       <Mark large />
       <p className="serif mt-2 text-xl text-[var(--ink)]">Start a new prep</p>
       <p className="max-w-sm text-sm text-[var(--ink-2)]">
-        Submit an appointment in the left rail, or open a saved prep from office memory to view it
-        here.
+        Submit an appointment in the left panel, or open a saved prep from office memory to view its
+        breakdown here.
       </p>
     </div>
   );
