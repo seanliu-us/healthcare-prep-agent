@@ -97,6 +97,9 @@ export default function Home() {
                 refreshKey={refreshKey}
                 selectedId={state.loadedSummaryId}
                 onSelect={(id) => loadHistory(id)}
+                onDeleted={(id) => {
+                  if (state.loadedSummaryId === id) reset();
+                }}
               />
             </div>
           </div>

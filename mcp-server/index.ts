@@ -283,6 +283,37 @@ server.registerTool(
 );
 
 server.registerTool(
+  "delete_summary",
+  {
+    title: "Delete summary",
+    description:
+      "Delete a persisted office summary by id, along with the research findings from the same run.",
+    inputSchema: {
+      id: z.string().describe("The summary id to delete"),
+    },
+  },
+  async (args) => {
+    const row = db
+      .prepare(`SELECT run_id FROM summaries WHERE id = ?`)
+      .get(args.id) as { run_id: string } | undefined;
+
+    if (!row) return ok({ deleted: false, reason: "not_found" });
+
+    const tx = db.transaction((id: string, runId: string) => {
+      const summaryResult = db.prepare(`DELETE FROM summaries WHERE id = ?`).run(id);
+      const findingsResult = db.prepare(`DELETE FROM findings WHERE run_id = ?`).run(runId);
+      return {
+        summariesDeleted: summaryResult.changes,
+        findingsDeleted: findingsResult.changes,
+      };
+    });
+
+    const result = tx(args.id, row.run_id);
+    return ok({ deleted: true, id: args.id, ...result });
+  },
+);
+
+server.registerTool(
   "list_recent_summaries",
   {
     title: "List recent summaries",
