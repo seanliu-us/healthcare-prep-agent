@@ -51,6 +51,14 @@ export interface RunState {
   trace?: TracePayload;
   persisted?: boolean;
   error?: string;
+  /** Which source produced the currently-displayed summary. */
+  source: "idle" | "live" | "history";
+  /** ID of the persisted summary being viewed (history mode). */
+  loadedSummaryId?: string;
+  /** Run id (for live runs) or the persisted run id (history). */
+  runId?: string;
+  /** When this run/summary was created. */
+  createdAt?: string;
 }
 
 const initialState: RunState = {
@@ -59,13 +67,39 @@ const initialState: RunState = {
   findings: [],
   risks: [],
   recommendations: [],
+  source: "idle",
 };
 
-type Action = { type: "reset" } | { type: "event"; event: AgentEvent } | { type: "status"; status: RunStatus };
+type Action =
+  | { type: "reset" }
+  | { type: "event"; event: AgentEvent }
+  | { type: "status"; status: RunStatus }
+  | {
+      type: "load_history";
+      input: AppointmentInput;
+      summary: OfficeSummary;
+      summaryId: string;
+      runId?: string;
+      createdAt?: string;
+    };
 
 function reducer(state: RunState, action: Action): RunState {
   if (action.type === "reset") return { ...initialState };
   if (action.type === "status") return { ...state, status: action.status };
+  if (action.type === "load_history") {
+    return {
+      ...initialState,
+      status: "done",
+      source: "history",
+      input: action.input,
+      summary: action.summary,
+      loadedSummaryId: action.summaryId,
+      runId: action.runId,
+      createdAt: action.createdAt,
+      risks: action.summary.risksAndGaps,
+      recommendations: action.summary.recommendedActions,
+    };
+  }
 
   const { event } = action;
   const data = event.data as Record<string, unknown>;
@@ -76,9 +110,12 @@ function reducer(state: RunState, action: Action): RunState {
       return {
         ...initialState,
         status: "running",
+        source: "live",
         mode: data.mode as AgentMode,
         model: data.model as string | undefined,
         input: data.input as AppointmentInput,
+        runId: event.runId,
+        createdAt: new Date(event.ts).toISOString(),
       };
 
     case "plan":
@@ -275,5 +312,48 @@ export function useAgentRun() {
     dispatch({ type: "reset" });
   }, []);
 
-  return { state, start, decide, reset };
+  const loadHistory = useCallback(async (id: string) => {
+    abortRef.current?.abort();
+    try {
+      const res = await fetch(`/api/summaries/${id}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = (await res.json()) as {
+        id: string;
+        runId?: string;
+        patientName: string;
+        insuranceCarrier: string;
+        procedureCode: string;
+        appointmentDate?: string;
+        createdAt: string;
+        summary: OfficeSummary;
+      };
+      dispatch({
+        type: "load_history",
+        summaryId: data.id,
+        runId: data.runId,
+        createdAt: data.createdAt,
+        input: {
+          patientName: data.patientName,
+          insuranceCarrier: data.insuranceCarrier,
+          procedureCode: data.procedureCode,
+          appointmentDate: data.appointmentDate ?? data.summary.appointmentDate,
+        },
+        summary: data.summary,
+      });
+    } catch (err) {
+      dispatch({
+        type: "event",
+        event: {
+          id: "client-error",
+          runId: "client",
+          seq: -1,
+          ts: Date.now(),
+          type: "error",
+          data: { message: err instanceof Error ? err.message : String(err) },
+        },
+      });
+    }
+  }, []);
+
+  return { state, start, decide, reset, loadHistory };
 }

@@ -232,6 +232,57 @@ server.registerTool(
 );
 
 server.registerTool(
+  "get_summary",
+  {
+    title: "Get summary by id",
+    description: "Fetch a previously persisted office summary by its id.",
+    inputSchema: {
+      id: z.string().describe("The summary id returned by save_office_summary"),
+    },
+  },
+  async (args) => {
+    const row = db
+      .prepare(
+        `SELECT id, run_id, patient_name, insurance_carrier, procedure_code, appointment_date, summary_json, created_at
+         FROM summaries WHERE id = ?`,
+      )
+      .get(args.id) as
+      | {
+          id: string;
+          run_id: string;
+          patient_name: string;
+          insurance_carrier: string;
+          procedure_code: string;
+          appointment_date: string | null;
+          summary_json: string;
+          created_at: string;
+        }
+      | undefined;
+
+    if (!row) return ok({ found: false });
+
+    let summary: unknown = null;
+    try {
+      summary = JSON.parse(row.summary_json);
+    } catch {
+      summary = null;
+    }
+
+    return ok({
+      found: true,
+      id: row.id,
+      runId: row.run_id,
+      patientName: row.patient_name,
+      insuranceCarrier: row.insurance_carrier,
+      procedureCode: row.procedure_code,
+      appointmentDate: row.appointment_date,
+      createdAt: row.created_at,
+      summary,
+    });
+  },
+);
+
+server.registerTool(
   "list_recent_summaries",
   {
     title: "List recent summaries",
