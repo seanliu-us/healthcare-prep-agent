@@ -245,7 +245,7 @@ All environment variables are **optional** (see `.env.example`):
 | Variable | Default | Effect |
 |----------|---------|--------|
 | `ANTHROPIC_API_KEY` | — | Enables LLM tool-use mode (else heuristic) |
-| `ANTHROPIC_MODEL` | `claude-3-5-sonnet-latest` | Model used in LLM mode |
+| `ANTHROPIC_MODEL` | `claude-sonnet-4-6` | Model used in LLM mode |
 | `TAVILY_API_KEY` | — | Enables live web search (else knowledge base) |
 | `MEMORY_DB_PATH` | `.data/office-memory.db` | SQLite location for office memory |
 

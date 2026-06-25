@@ -7,7 +7,7 @@ import Anthropic from "@anthropic-ai/sdk";
 
 let cached: Anthropic | null | undefined;
 
-export const DEFAULT_MODEL = process.env.ANTHROPIC_MODEL ?? "claude-3-5-sonnet-latest";
+export const DEFAULT_MODEL = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
 
 export function getAnthropic(): Anthropic | null {
   if (cached !== undefined) return cached;
