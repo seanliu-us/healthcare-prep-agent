@@ -262,6 +262,25 @@ a SQLite file. Deploy to a **long-running Node host**:
   `node --import tsx mcp-server/index.ts`), so a prod-only install still works.
 - **Build/run:** `bun run build` then `bun run start` (or `npm`), behind the platform's port.
 
+### Deploy to Render (recommended)
+
+A `Dockerfile` and `render.yaml` blueprint are included.
+
+1. Push this repo to GitHub (already done if you're reading this there).
+2. In Render: **New + → Blueprint**, connect the repo, and apply — it reads `render.yaml`
+   (a Docker web service, free plan, health check at `/api/health`).
+   *Or* **New + → Web Service → Docker** and point it at the repo.
+3. (Optional) Add `ANTHROPIC_API_KEY` / `TAVILY_API_KEY` in the service's **Environment** tab to
+   enable LLM mode + live search. Without them it runs in heuristic / knowledge-base mode.
+4. Deploy. The app listens on Render's injected `PORT`; the MCP server is spawned inside the
+   container and writes to `/data/office-memory.db`.
+
+> **Persistence:** on the free plan `/data` is ephemeral (office memory resets on redeploy). For
+> durable cross-run memory, attach a **Persistent Disk** mounted at `/data` (paid) — uncomment the
+> `disk:` block in `render.yaml`.
+
+The same Docker image works on Railway and Fly.io with their respective volume settings.
+
 ---
 
 ## Evaluation mapping

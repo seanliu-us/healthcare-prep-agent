@@ -1,0 +1,25 @@
+# Render Blueprint — deploy PrepPilot as a Docker web service.
+# In Render: New + → Blueprint → connect this repo. Or set it up manually (see README).
+services:
+  - type: web
+    name: preppilot
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      # Optional — leave unset to run in heuristic / knowledge-base mode.
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
+      # Office-memory DB path. The Docker image defaults this to /data/office-memory.db.
+      # On the free plan /data is ephemeral (resets on redeploy). For durable memory,
+      # attach a Persistent Disk (paid) mounted at /data — see the commented block below.
+      - key: MEMORY_DB_PATH
+        value: /data/office-memory.db
+    # --- Enable for persistent office memory (requires a paid instance) ---
+    # disk:
+    #   name: office-memory
+    #   mountPath: /data
+    #   sizeGB: 1
