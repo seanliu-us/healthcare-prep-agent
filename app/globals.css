@@ -68,6 +68,20 @@ body {
   border-color: var(--line);
 }
 
+/* Tailwind's reset sets buttons to cursor:default; restore the pointer for
+   any enabled clickable control. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+label[for],
+summary,
+select:not(:disabled) {
+  cursor: pointer;
+}
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
 /* ---------------------------------------------------------------- */
 /* Reusable element styles                                           */
 /* ---------------------------------------------------------------- */
@@ -243,6 +257,12 @@ body {
   background: color-mix(in oklch, var(--accent) 12%, white);
   color: var(--accent-ink);
 }
+.side-icon-wide {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 0.7rem;
+  padding: 0 0.7rem;
+}
 
 .section-title {
   font-size: 0.82rem;
@@ -306,4 +326,35 @@ body {
 .ask-ai:hover {
   background: #000;
   transform: translateY(-1px);
+}
+
+.typing-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.typing-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--ink-3);
+  animation: typing-bounce 1.2s infinite ease-in-out;
+}
+.typing-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.typing-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes typing-bounce {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
 }

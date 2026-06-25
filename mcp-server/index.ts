@@ -314,12 +314,30 @@ server.registerTool(
 );
 
 server.registerTool(
+  "delete_all_summaries",
+  {
+    title: "Delete all summaries",
+    description: "Clear the entire office memory: remove all persisted summaries and findings.",
+    inputSchema: {},
+  },
+  async () => {
+    const tx = db.transaction(() => {
+      const s = db.prepare(`DELETE FROM summaries`).run();
+      const f = db.prepare(`DELETE FROM findings`).run();
+      return { summariesDeleted: s.changes, findingsDeleted: f.changes };
+    });
+    const result = tx();
+    return ok({ cleared: true, ...result });
+  },
+);
+
+server.registerTool(
   "list_recent_summaries",
   {
     title: "List recent summaries",
     description: "List the most recent office summaries persisted across all patients.",
     inputSchema: {
-      limit: z.number().int().positive().max(50).optional(),
+      limit: z.number().int().positive().max(500).optional(),
     },
   },
   async (args) => {

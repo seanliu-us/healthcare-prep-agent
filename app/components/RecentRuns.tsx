@@ -28,7 +28,6 @@ export function RecentRuns({ refreshKey, selectedId, onSelect, onDeleted }: Rece
 
   useEffect(() => {
     let cancelled = false;
-    setState("loading");
     fetch("/api/summaries")
       .then((r) => r.json())
       .then((data: { summaries?: SummaryRow[] }) => {

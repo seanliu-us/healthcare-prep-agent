@@ -1,34 +1,43 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAgentRun } from "@/lib/useAgentRun";
+import { useAuth } from "@/lib/useAuth";
 import { RunForm } from "./components/RunForm";
 import { Timeline } from "./components/Timeline";
 import { Findings } from "./components/Findings";
 import { SummaryView } from "./components/SummaryView";
+import { OutreachKit } from "./components/OutreachKit";
 import { ApprovalBar } from "./components/ApprovalBar";
 import { RunHeader } from "./components/RunHeader";
 import { RecentRuns } from "./components/RecentRuns";
 import { Tabs, type TabDef } from "./components/Tabs";
-import { Sidebar } from "./components/Sidebar";
+import { Sidebar, type View } from "./components/Sidebar";
 import { TopBar } from "./components/TopBar";
-import { AskAiButton } from "./components/AskAiButton";
+import { AskAi } from "./components/AskAi";
+import { DashboardView } from "./components/DashboardView";
+import { HistoryView } from "./components/HistoryView";
+import { SettingsView } from "./components/SettingsView";
+import { Login } from "./components/Login";
 import { Badge } from "./components/ui";
 
 interface Health {
   agentMode: "llm" | "heuristic";
   model: string | null;
   searchProvider: "tavily" | "knowledge_base";
+  procedureCodes?: string[];
 }
 
-type TabId = "summary" | "activity" | "findings" | "trace";
+type TabId = "summary" | "outreach" | "activity" | "findings" | "trace";
 
 export default function Home() {
+  const { user, ready, signIn, signOut } = useAuth();
   const { state, start, decide, reset, loadHistory } = useAgentRun();
   const [health, setHealth] = useState<Health | null>(null);
   const [tab, setTab] = useState<TabId>("summary");
   const [refreshKey, setRefreshKey] = useState(0);
-  const lastStatus = useRef(state.status);
+  const [view, setView] = useState<View>("dashboard");
+  const [navExpanded, setNavExpanded] = useState(false);
 
   useEffect(() => {
     fetch("/api/health")
@@ -37,22 +46,29 @@ export default function Home() {
       .catch(() => setHealth(null));
   }, []);
 
-  useEffect(() => {
-    if (state.status === "running" && lastStatus.current !== "running") setTab("activity");
-    if (state.status === "done" && lastStatus.current !== "done") setTab("summary");
-    if (state.status === "done" && state.source === "live") {
-      setRefreshKey((k) => k + 1);
+  // Adjust the active tab when the run status changes. Done during render (with a
+  // previous-value guard) rather than in an effect — the pattern React recommends
+  // for deriving state from changes (avoids extra render passes).
+  const [prevStatus, setPrevStatus] = useState(state.status);
+  if (state.status !== prevStatus) {
+    setPrevStatus(state.status);
+    if (state.status === "running") setTab("activity");
+    if (state.status === "done") {
+      setTab("summary");
+      if (state.source === "live") setRefreshKey((k) => k + 1);
     }
-    lastStatus.current = state.status;
-  }, [state.status, state.source]);
+  }
 
-  useEffect(() => {
+  const [prevLoaded, setPrevLoaded] = useState(state.loadedSummaryId);
+  if (state.loadedSummaryId !== prevLoaded) {
+    setPrevLoaded(state.loadedSummaryId);
     if (state.source === "history") setTab("summary");
-  }, [state.loadedSummaryId, state.source]);
+  }
 
   const tabs: TabDef[] = useMemo(
     () => [
       { id: "summary", label: "Summary", hidden: !state.summary },
+      { id: "outreach", label: "Outreach", hidden: !state.summary },
       { id: "activity", label: "Activity", count: state.timeline.length || undefined, hidden: state.source === "history" },
       { id: "findings", label: "Findings", count: state.findings.length || undefined, hidden: state.source === "history" || state.findings.length === 0 },
       { id: "trace", label: "Trace", hidden: state.source === "history" || !state.trace },
@@ -63,27 +79,71 @@ export default function Home() {
   const running = state.status === "running" || state.status === "awaiting_approval";
   const visibleTab: TabId = tabs.find((t) => t.id === tab && !t.hidden) ? tab : (tabs.find((t) => !t.hidden)?.id as TabId) ?? "summary";
 
-  const scrollTo = (id: string) => {
-    const el = document.getElementById(id);
-    el?.scrollIntoView({ behavior: "smooth", block: "start" });
-    if (id === "new-prep") {
+  const focusNewPrep = () => {
+    reset();
+    setView("newprep");
+    requestAnimationFrame(() => {
+      const el = document.getElementById("new-prep");
       const input = el?.querySelector("input");
       (input as HTMLInputElement | null)?.focus();
-    }
+    });
   };
+
+  const openPrep = (id: string) => {
+    loadHistory(id);
+    setView("newprep");
+  };
+
+  if (!ready) {
+    return <div className="min-h-dvh bg-[var(--bg-2)]" />;
+  }
+  if (!user) {
+    return <Login onSignIn={(name, role) => signIn(name, role)} />;
+  }
 
   return (
     <div className="flex h-dvh w-full overflow-hidden bg-[var(--bg)]">
-      <Sidebar onNew={() => scrollTo("new-prep")} onHistory={() => scrollTo("recent-preps")} />
+      <Sidebar
+        view={view}
+        onSelect={setView}
+        onNew={focusNewPrep}
+        expanded={navExpanded}
+        onToggle={() => setNavExpanded((v) => !v)}
+      />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar
           statusSlot={<StatusBar health={health} mode={state.mode} />}
-          onLogout={() => reset()}
+          user={user}
+          onSignOut={signOut}
         />
 
         <div className="min-h-0 flex-1 overflow-hidden">
           <div className="mx-auto flex h-full max-w-[1320px] flex-col px-4 py-4 sm:px-6 sm:py-5">
+            {view === "dashboard" ? (
+              <DashboardView
+                user={user}
+                health={health}
+                refreshKey={refreshKey}
+                selectedId={state.loadedSummaryId}
+                onNewPrep={focusNewPrep}
+                onOpen={openPrep}
+                onDeleted={(id) => {
+                  if (state.loadedSummaryId === id) reset();
+                }}
+                onGoHistory={() => setView("history")}
+                onGoSettings={() => setView("settings")}
+              />
+            ) : view === "history" ? (
+              <HistoryView
+                refreshKey={refreshKey}
+                selectedId={state.loadedSummaryId}
+                onOpen={openPrep}
+                onChanged={() => setRefreshKey((k) => k + 1)}
+              />
+            ) : view === "settings" ? (
+              <SettingsView health={health} user={user} onChanged={() => setRefreshKey((k) => k + 1)} />
+            ) : (
             <div className="grid flex-1 gap-5 lg:min-h-0 lg:grid-cols-[300px_minmax(0,1fr)]">
               {/* ---------- Left rail ---------- */}
               <aside className="flex flex-col gap-4 lg:min-h-0">
@@ -153,6 +213,12 @@ export default function Home() {
                       {visibleTab === "summary" && state.summary && (
                         <SummaryView summary={state.summary} />
                       )}
+                      {visibleTab === "outreach" && state.summary && (
+                        <OutreachKit
+                          summary={state.summary}
+                          aiAvailable={(state.mode ?? health?.agentMode) === "llm"}
+                        />
+                      )}
                       {visibleTab === "activity" && (
                         <Timeline items={state.timeline} running={running} />
                       )}
@@ -173,11 +239,12 @@ export default function Home() {
                 )}
               </main>
             </div>
+            )}
           </div>
         </div>
       </div>
 
-      <AskAiButton onClick={() => scrollTo("new-prep")} />
+      <AskAi summary={state.summary} />
     </div>
   );
 }

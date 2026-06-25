@@ -26,7 +26,6 @@ interface McpConnection {
 }
 
 declare global {
-  // eslint-disable-next-line no-var
   var __mcpConnection: Promise<McpConnection> | undefined;
 }
 

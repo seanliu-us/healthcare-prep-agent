@@ -13,7 +13,6 @@ interface PendingApproval {
 }
 
 declare global {
-  // eslint-disable-next-line no-var
   var __pendingApprovals: Map<string, PendingApproval> | undefined;
 }
 

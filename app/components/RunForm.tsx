@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import type { AppointmentInput } from "@/lib/types";
+import { Combobox } from "./Combobox";
+
+const CARRIERS = ["Aetna", "UnitedHealthcare", "Cigna", "Blue Cross Blue Shield", "Medicare"];
 
 const SAMPLES: Array<AppointmentInput & { label: string }> = [
   {
@@ -85,40 +88,26 @@ export function RunForm({
       </Field>
 
       <Field label="Insurance carrier">
-        <input
-          className="input"
+        <Combobox
           value={form.insuranceCarrier}
-          onChange={(e) => update("insuranceCarrier", e.target.value)}
+          onChange={(v) => update("insuranceCarrier", v)}
+          options={CARRIERS}
           placeholder="Aetna"
-          list="carriers"
           required
           disabled={disabled}
         />
-        <datalist id="carriers">
-          <option value="Aetna" />
-          <option value="UnitedHealthcare" />
-          <option value="Cigna" />
-          <option value="Blue Cross Blue Shield" />
-          <option value="Medicare" />
-        </datalist>
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Procedure code">
-          <input
-            className="input"
+          <Combobox
             value={form.procedureCode}
-            onChange={(e) => update("procedureCode", e.target.value)}
+            onChange={(v) => update("procedureCode", v)}
+            options={PROCEDURES}
             placeholder="MRI_KNEE"
-            list="procedures"
             required
             disabled={disabled}
           />
-          <datalist id="procedures">
-            {PROCEDURES.map((p) => (
-              <option key={p} value={p} />
-            ))}
-          </datalist>
         </Field>
 
         <Field label="Appointment date">
