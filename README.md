@@ -1,5 +1,7 @@
 # PrepPilot — Autonomous Healthcare Appointment Prep Agent
 
+[![CI](https://github.com/seanliu-us/healthcare-prep-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/seanliu-us/healthcare-prep-agent/actions/workflows/ci.yml)
+
 An autonomous AI agent that helps a healthcare office prepare for an upcoming patient
 appointment. Given an appointment, it **plans**, **gathers information from three independent
 sources**, **reasons across them**, **flags risks**, produces an **actionable office summary**, and
